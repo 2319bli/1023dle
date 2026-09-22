@@ -5,7 +5,7 @@ const memory=new Map(), modes=['daily','practice','endless'];
 const KEYS='1234567890qwer',OP_NAMES={cycle:'Cycle',reverse:'Reverse',swap:'Swap',rotate:'Rotate'},OP_ICONS={cycle:'↻',reverse:'↺',swap:'⇄',rotate:'⟳'};
 const letter=i=>String.fromCharCode(65+i);
 function operationText(op){const lamps=op.indices.map(letter).join(op.type==='rotate'?' → ':' · ');return `${OP_NAMES[op.type]} ${lamps}`;}
-let mode='daily',puzzle,state,path=[],hinted=false,hintCount=0,complete=false,failed=false,saving=true,seed='',cleared=0;
+let mode='daily',puzzle,state,path=[],hinted=false,hintCount=0,complete=false,failed=false,saving=true,seed='',cleared=0,rankedRun=null;
 const key=()=>mode==='daily'?'1023-daily-colour-v2:'+puzzle.date:'1023-'+mode+'-colour-v2';
 const stopped=()=>complete||failed;
 function stored(k){try{return localStorage.getItem(k)||memory.get(k)||null}catch{return memory.get(k)||null}}
@@ -24,7 +24,7 @@ function restore(){
   complete=state===puzzle.targetState;failed=mode==='endless'&&!complete&&path.length>=puzzle.par+2;
 }
 function save(){
-  saving=write(key(),JSON.stringify({date:puzzle.date,seed,path,hinted,hintCount,cleared}));
+  saving=write(key(),JSON.stringify({date:puzzle.date,seed,path,hinted,hintCount,cleared,rankedRun}));
   $('save-status').textContent=saving?'Each mode saves on this device':'Progress saved for this visit only';
 }
 function read(){
@@ -57,6 +57,7 @@ function render(showResult=false){
     $('result-return').textContent=mode==='daily'?'Another circuit tomorrow · 00:00 UTC':mode==='practice'?'Take your time. Hints are here to help.':failed?'Every new run starts at circuit 1.':'Next circuit, same rule: perfect + 2. No hints.';
     if(showResult){$('success').hidden=false;(mode==='daily'?$('share'):$('continue')).focus()}
   }
+  window.Leaderboards?.refresh();
 }
 function flip(index){
   if(!Number.isInteger(index)||index<0||index>=puzzle.operations.length)throw new Error('Switch index must be an integer from 0 to 13.');
@@ -85,12 +86,13 @@ function buildBoard(){
 }
 function setMode(next){
   if(!modes.includes(next))throw new Error('Choose daily, practice, or endless.');
-  if(puzzle)save();mode=next;cleared=0;
+  if(puzzle)save();mode=next;cleared=0;rankedRun=null;
   if(mode==='daily'){puzzle=P.daily(dateNow());seed=''}
   else{
     let saved;try{saved=JSON.parse(stored('1023-'+mode+'-colour-v2')||'null')}catch{}
     seed=typeof saved?.seed==='string'&&saved.seed.length>0&&saved.seed.length<200?saved.seed:newSeed();
     cleared=mode==='endless'&&Number.isSafeInteger(saved?.cleared)&&saved.cleared>=0?saved.cleared:0;
+    if(mode==='endless'&&saved?.rankedRun?.seed===seed&&typeof saved.rankedRun.id==='string'&&Number.isSafeInteger(saved.rankedRun.round))rankedRun=saved.rankedRun;
     puzzle=P.generate('1023-'+mode+'-colour-v2:'+seed);
   }
   restore();save();write('1023-selected-mode-colour-v2',mode);buildBoard();return read();
@@ -99,6 +101,7 @@ function startDay(){return setMode('daily')}
 function nextPuzzle(){
   if(mode==='daily')throw new Error('The daily puzzle only changes at midnight UTC.');
   if(mode==='endless'&&!stopped())throw new Error('Finish the current circuit before advancing.');
+  if(mode==='endless'&&rankedRun)return window.Leaderboards.advance();
   if(failed)cleared=0;
   seed=newSeed();puzzle=P.generate('1023-'+mode+'-colour-v2:'+seed);resetState();save();buildBoard();return read();
 }
@@ -119,7 +122,7 @@ function showHint(){
   if(mode!=='practice'||stopped())return false;
   hinted=true;hintCount++;save();const index=puzzle.nextSwitch[state];
   document.querySelectorAll('.switch').forEach((el,i)=>el.classList.toggle('hint',i===index));trace(index);
-  $('status').textContent=`Try switch ${index===9?0:index+1}. ${puzzle.distances[state]} moves from here. Practice hint used.`;return true;
+  $('status').textContent=`Try switch ${KEYS[index].toUpperCase()}. ${puzzle.distances[state]} moves from here. Practice hint used.`;return true;
 }
 $('hint').onclick=showHint;$('random-puzzle').onclick=nextPuzzle;$('continue').onclick=nextPuzzle;
 modes.forEach(name=>$('mode-'+name).onclick=()=>setMode(name));
@@ -130,7 +133,7 @@ $('share').onclick=async()=>{
 };
 $('view-board').onclick=()=>{$('success').hidden=true;$('show-result').focus()};$('show-result').onclick=()=>{$('success').hidden=false;(mode==='daily'?$('share'):$('continue')).focus()};$('new-day').onclick=startDay;
 $('help').onclick=()=>$('instructions').showModal();$('close').onclick=$('play').onclick=()=>$('instructions').close();
-document.addEventListener('keydown',e=>{if(e.ctrlKey||e.metaKey||e.altKey||e.repeat||$('instructions').open||stopped()||['INPUT','TEXTAREA','SELECT'].includes(e.target.tagName))return;const index=KEYS.indexOf(e.key.toLowerCase());if(index>=0&&e.key.length===1){e.preventDefault();flip(index)}});
+document.addEventListener('keydown',e=>{if(e.ctrlKey||e.metaKey||e.altKey||e.repeat||$('instructions').open||$('leaderboards').open||stopped()||['INPUT','TEXTAREA','SELECT'].includes(e.target.tagName))return;const index=KEYS.indexOf(e.key.toLowerCase());if(index>=0&&e.key.length===1){e.preventDefault();flip(index)}});
 window.addEventListener('storage',e=>{if(e.key===key()&&mode==='daily'){restore();render(stopped());$('status').textContent='Daily progress updated from another tab.'}});
 document.addEventListener('visibilitychange',()=>{if(!document.hidden)clock()});
 const savedMode=stored('1023-selected-mode-colour-v2');setMode(modes.includes(savedMode)?savedMode:'daily');setInterval(clock,1000);

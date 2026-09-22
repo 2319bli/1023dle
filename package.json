@@ -4,6 +4,14 @@
   "private": true,
   "description": "A daily colour-circuit puzzle with binary match scoring",
   "scripts": {
-    "test": "node --check game.js && node --check puzzle.js && node tests/binary.cjs && node tests/daily.cjs && node tests/state.cjs"
+    "test": "node --check game.js && node --check puzzle.js && node tests/binary.cjs && node tests/daily.cjs && node tests/state.cjs && node --check leaderboard.js && node --test tests/leaderboard.mjs && node tests/ranking-state.cjs",
+    "test:server": "node --test tests/leaderboard.mjs",
+    "build": "node server/build.mjs",
+    "db:generate": "drizzle-kit generate",
+    "dev": "node server/dev.mjs"
+  },
+  "devDependencies": {
+    "drizzle-kit": "^0.31.11",
+    "drizzle-orm": "^0.45.3"
   }
 }
