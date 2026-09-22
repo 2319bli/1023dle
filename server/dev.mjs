@@ -3,7 +3,7 @@ import { readFile } from 'node:fs/promises';
 import worker from './worker.mjs';
 import { database } from '../tests/d1.mjs';
 const DB = database(), port = Number(process.env.PORT || 4173);
-const files = new Map([['/', ['index.html', 'text/html']], ['/index.html', ['index.html', 'text/html']], ['/style.css', ['style.css', 'text/css']], ['/puzzle.js', ['puzzle.js', 'text/javascript']], ['/game.js', ['game.js', 'text/javascript']], ['/leaderboard.js', ['leaderboard.js', 'text/javascript']]]);
+const files = new Map([['/', ['index.html', 'text/html']], ['/index.html', ['index.html', 'text/html']], ['/style.css', ['style.css', 'text/css']], ['/themes.css', ['themes.css', 'text/css']], ['/themes.js', ['themes.js', 'text/javascript']], ['/puzzle.js', ['puzzle.js', 'text/javascript']], ['/game.js', ['game.js', 'text/javascript']], ['/leaderboard.js', ['leaderboard.js', 'text/javascript']]]);
 createServer(async (req, res) => {
   const url = new URL(req.url, `http://127.0.0.1:${port}`);
   try {

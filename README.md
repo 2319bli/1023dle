@@ -77,3 +77,7 @@ npm run dev
 ```
 
 Open `http://127.0.0.1:4173`. The development server provides the game and a temporary, in-memory SQLite leaderboard. Restarting it clears test scores. `npm test` includes API tests against real SQLite, replay validation, ties, duplicate requests, cumulative totals, offline retry and saved ranked progress. `npm run db:generate` generates new migrations after intentional schema changes; do not edit an applied migration.
+
+## Themes
+
+Choose Forest (the original), Midnight, Paper, Ember or Arcade from the header’s Theme selector. The palette is saved in this browser and applies to the game, results and leaderboards. Lamp colours and symbols keep the same meanings.
