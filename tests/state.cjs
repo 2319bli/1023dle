@@ -38,5 +38,32 @@ function app(storage=new Map(),iso='2026-09-21T23:59:58Z',blocked=false){
  failedReload.run('nextPuzzle()');assert.equal(failedReload.run('cleared'),0);assert.equal(failedReload.run('failed'),false);assert.equal(failedReload.run('read().round'),1);
  failedReload.run('while(!stopped())flip(puzzle.nextSwitch[state])');assert(failedReload.run('complete'));assert.equal(failedReload.run('path.length'),failedReload.run('puzzle.par'));
  assert.throws(()=>game.run("setMode('invalid')"));
+ // The cosmetic banner uses wall-clock UTC, independent of puzzle date or mode.
+ const holiday=app(new Map(),'2026-10-22T23:59:59.999Z');
+ assert.equal(holiday.nodes.get('ten-twenty-three').hidden,true);
+ const before=holiday.run('JSON.stringify(read())'),saveBefore=JSON.stringify([...holiday.storage]);
+ holiday.advance('2026-10-23T00:00:00.000Z');
+ assert.equal(holiday.nodes.get('ten-twenty-three').hidden,false);
+ assert.equal(holiday.run('JSON.stringify(read())'),before);
+ assert.equal(JSON.stringify([...holiday.storage]),saveBefore);
+ holiday.nodes.get('new-day').onclick();assert.equal(holiday.run('puzzle.number'),33);
+ holiday.run('flip(0)');const holidayState=holiday.run('state');
+ const holidayReload=app(holiday.storage,'2026-10-23T12:00:00Z');
+ assert.equal(holidayReload.run('state'),holidayState);
+ assert.equal(holidayReload.nodes.get('ten-twenty-three').hidden,false);
+ holidayReload.run('while(!complete)flip(puzzle.nextSwitch[state])');
+ const shareBefore=holidayReload.run('resultText()');
+ holidayReload.advance('2026-10-23T23:59:59.999Z');assert.equal(holidayReload.nodes.get('ten-twenty-three').hidden,false);
+ holidayReload.advance('2026-10-24T00:00:00.000Z');assert.equal(holidayReload.nodes.get('ten-twenty-three').hidden,true);
+ assert.equal(holidayReload.run('resultText()'),shareBefore);
+ for(const name of ['practice','endless']){
+  holiday.run(`setMode('${name}')`);assert.equal(holiday.nodes.get('ten-twenty-three').hidden,false);
+  holiday.advance('2026-10-24T00:00:00Z');assert.equal(holiday.nodes.get('ten-twenty-three').hidden,true);
+  holiday.advance('2026-10-23T12:00:00Z');assert.equal(holiday.nodes.get('ten-twenty-three').hidden,false);
+ }
+ for(const iso of ['2025-10-23T12:00:00Z','2027-10-23T12:00:00Z','2026-10-23T00:30:00+01:00','2026-10-22T20:00:00-04:00']){
+  holiday.advance(iso);assert.equal(holiday.nodes.get('ten-twenty-three').hidden,new Date(iso).toISOString().slice(0,10)!=='2026-10-23');
+ }
+ console.log('Passed: 10/23 UTC boundaries, timezone offsets, year guard, open-tab rollover in all modes, unchanged state/storage/share text and holiday save reload.');
  console.log('Passed: isolated mode saves, Daily hint blocking, Practice hints and random puzzles, Endless perfect / perfect+2 success, limit failure, run continuation and restart, reloads, UTC rollover, clipboard fallback, blocked/corrupt storage.');
 })().catch(e=>{console.error(e);process.exitCode=1});
