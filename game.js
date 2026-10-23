@@ -106,6 +106,8 @@ function nextPuzzle(){
   seed=newSeed();puzzle=P.generate('1023-'+mode+'-colour-v2:'+seed);resetState();save();buildBoard();return read();
 }
 function clock(){
+  // Cosmetic only: follow the current UTC date, even with an older circuit open.
+  $('ten-twenty-three').hidden=dateNow()!=='2026-10-23';
   $('new-day').hidden=true;
   if(mode!=='daily'){$('daily-timer').textContent=mode==='practice'?'Hints available · No move limit':'No hints · Perfect + 2';return}
   const next=Date.parse(puzzle.date+'T00:00:00Z')+86400000,remaining=Math.max(0,Math.ceil((next-Date.now())/1000));
